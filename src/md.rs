@@ -35,7 +35,7 @@ impl Markdown {
                 if in_code_block {
                     in_code_block = false;
                 } else {
-                    // Start a new code block
+                    // The language should be the first word after the ```
                     let language = line[3..].trim().to_string();
                     in_code_block = true;
                     elements.push(MarkdownElement::CodeBlock {
