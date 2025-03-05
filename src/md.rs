@@ -34,7 +34,6 @@ impl Markdown {
                 // Check if last pushed element is a code block
                 if in_code_block {
                     in_code_block = false;
-                    continue;
                 } else {
                     // Start a new code block
                     let language = line[3..].trim().to_string();
