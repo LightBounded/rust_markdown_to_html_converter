@@ -32,7 +32,7 @@ impl Markdown {
 
             if line.starts_with("```") {
                 // Check if last pushed element is a code block
-                if let Some(MarkdownElement::CodeBlock { .. }) = elements.last() {
+                if in_code_block {
                     in_code_block = false;
                     continue;
                 } else {
