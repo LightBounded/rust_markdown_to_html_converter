@@ -2,6 +2,5 @@ mod md;
 
 fn main() {
     let markdown = md::Markdown::new("assets/sample.md".to_string());
-    let html = markdown.to_html();
-    println!("{}", html);
+    markdown.write_to_file("assets/sample.html".to_string());
 }

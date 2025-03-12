@@ -76,4 +76,9 @@ impl Markdown {
 
         html
     }
+
+    pub fn write_to_file(&self, path: String) {
+        let html = self.to_html();
+        fs::write(path, html).expect("Failed to write file");
+    }
 }
