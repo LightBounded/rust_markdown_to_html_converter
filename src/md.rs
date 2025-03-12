@@ -1,93 +1,58 @@
-#[derive(Debug)]
+use std::fs;
 
 pub struct Markdown {
-    content: String,
+    pub contents: String,
+}
+
+#[derive(Debug)]
+enum MarkdownElement {
+    Header { text: String, level: u8 },
 }
 
 impl Markdown {
-    pub fn new(content: String) -> Self {
-        Markdown { content }
+    pub fn new(path: String) -> Markdown {
+        if !path.ends_with(".md") {
+            panic!("File must be a markdown file");
+        }
+
+        let contents = fs::read_to_string(path).expect("Failed to read file");
+        Markdown { contents }
     }
 
-    pub fn parse(&self) -> Vec<MarkdownElement> {
-        let mut elements = Vec::new();
-        let mut in_code_block = false;
-
-        for line in self.content.lines() {
-            if line.starts_with('#') {
-                elements.push(parse_header(line));
-                continue;
-            }
-
-            if line.starts_with("- ") {
-                // Check if last pushed element is a list
-                if let Some(MarkdownElement::List(current_list)) = elements.last_mut() {
-                    current_list.push(line[2..].to_string());
-                } else {
-                    let mut new_list = Vec::new();
-                    new_list.push(line[2..].to_string());
-                    elements.push(MarkdownElement::List(new_list));
-                }
-            }
-
-            if line.starts_with("```") {
-                // Check if last pushed element is a code block
-                if in_code_block {
-                    in_code_block = false;
-                } else {
-                    // The language should be the first word after the ```
-                    let language = line[3..].trim().to_string();
-                    in_code_block = true;
-                    elements.push(MarkdownElement::CodeBlock {
-                        language,
-                        text: String::new(),
+    fn to_elements(&self) -> Vec<MarkdownElement> {
+        let lines = self.contents.lines();
+        let mut elements: Vec<MarkdownElement> = Vec::new();
+        for line in lines {
+            let trimmed_line = line.trim();
+            if trimmed_line.starts_with('#') {
+                let level = trimmed_line.chars().take_while(|&c| c == '#').count(); // Count `#`
+                // 🔹 Check for space after #
+                if level <= 6 && trimmed_line.chars().nth(level) == Some(' ') {
+                    let text = trimmed_line.chars().skip(level + 1).collect::<String>();
+                    elements.push(MarkdownElement::Header {
+                        text,
+                        level: level as u8,
                     });
-                }
-            }
-
-            if in_code_block && !line.starts_with("```") {
-                if let Some(MarkdownElement::CodeBlock { text, .. }) = elements.last_mut() {
-                    *text += line;
                 }
             }
         }
 
         elements
     }
-}
 
-#[derive(Debug)]
-pub enum MarkdownElement {
-    Heading { level: u8, text: String },
-    Paragraph(Vec<InlineMarkdownElement>), // Paragraphs contain inline elements
-    List(Vec<String>),                     // A list contains multiple items
-    CodeBlock { language: String, text: String },
-    BlockQuote(String),
-    HorizontalRule,
-}
+    pub fn to_html(&self) -> String {
+        let elements = self.to_elements();
 
-#[derive(Debug)]
-pub enum InlineMarkdownElement {
-    Text(String),
-    Bold(String),
-    Italic(String),
-    InlineCode(String),
-    Link { text: String, url: String },
-}
+        let mut html = String::new();
 
-fn parse_header(line: &str) -> MarkdownElement {
-    let mut text = String::new();
-    let mut level = 0;
-    let mut text_start = false;
-    for c in line.chars() {
-        if c == '#' && !text_start {
-            level += 1;
-        } else if c == ' ' && !text_start {
-            text_start = true;
-        } else {
-            text.push(c);
+        for element in elements {
+            match element {
+                MarkdownElement::Header { text, level } => {
+                    html.push_str(&format!("<h{}>{}</h{}>", level, text, level));
+                }
+            }
         }
-    }
 
-    MarkdownElement::Heading { level, text }
+        html
+    }
 }
