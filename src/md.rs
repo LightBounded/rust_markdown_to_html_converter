@@ -7,6 +7,7 @@ pub struct Markdown {
 #[derive(Debug)]
 enum MarkdownElement {
     Header { text: String, level: u8 },
+    CodeBlock { code: String, language: String },
 }
 
 impl Markdown {
@@ -20,13 +21,15 @@ impl Markdown {
     }
 
     fn to_elements(&self) -> Vec<MarkdownElement> {
-        let lines = self.contents.lines();
+        let mut lines = self.contents.lines();
         let mut elements: Vec<MarkdownElement> = Vec::new();
-        for line in lines {
+
+        while let Some(line) = lines.next() {
             let trimmed_line = line.trim();
             if trimmed_line.starts_with('#') {
-                let level = trimmed_line.chars().take_while(|&c| c == '#').count(); // Count `#`
-                // 🔹 Check for space after #
+                // Count `#`
+                let level = trimmed_line.chars().take_while(|&c| c == '#').count();
+                // Check for space after #
                 if level <= 6 && trimmed_line.chars().nth(level) == Some(' ') {
                     let text = trimmed_line.chars().skip(level + 1).collect::<String>();
                     elements.push(MarkdownElement::Header {
@@ -34,6 +37,18 @@ impl Markdown {
                         level: level as u8,
                     });
                 }
+            } else if trimmed_line.starts_with("```") {
+                let language = trimmed_line.chars().skip(3).collect::<String>();
+                let mut code = String::new();
+                while let Some(line) = lines.next() {
+                    // Closing code block
+                    if line.trim() == "```" {
+                        break;
+                    }
+                    code.push_str(line);
+                    code.push_str("\n");
+                }
+                elements.push(MarkdownElement::CodeBlock { code, language });
             }
         }
 
@@ -49,6 +64,12 @@ impl Markdown {
             match element {
                 MarkdownElement::Header { text, level } => {
                     html.push_str(&format!("<h{}>{}</h{}>", level, text, level));
+                }
+                MarkdownElement::CodeBlock { code, language } => {
+                    html.push_str(&format!(
+                        "<pre><code class=\"language-{}\">{}</code></pre>",
+                        language, code
+                    ));
                 }
             }
         }
