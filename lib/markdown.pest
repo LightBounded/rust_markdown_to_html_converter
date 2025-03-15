@@ -1,6 +1,0 @@
-WHITESPACE = _{ " " | "\t" }
-document   = { SOI ~ paragraph ~ EOI }
-paragraph  = { (strong | emphasis | text)+ }
-strong     = { "**" ~ (emphasis | text)+ ~ "**" }
-emphasis   = { "*" ~ (strong | text)+ ~ "*" }
-text       = { (!("*" | "**") ~ ANY)+ }
